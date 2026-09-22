@@ -1,0 +1,33 @@
+# Antivirus Scanning Package (`com.project.souklab.filestorage.scan`)
+
+Stream-based malware inspection integrating with local or containerized ClamAV daemons.
+
+---
+
+## Scanning Pipeline
+
+```mermaid
+sequenceDiagram
+    participant App as Application (FileValidator)
+    participant Scanner as ClamdInstreamScanner
+    participant ClamD as ClamAV Daemon (:3310)
+
+    App->>Scanner: scan(InputStream)
+    Scanner->>ClamD: Connect TCP Socket
+    Scanner->>ClamD: Send "zINSTREAM\\0"
+    Scanner->>ClamD: Stream chunks (length prefixed)
+    Scanner->>ClamD: Send 0-length terminating chunk
+    ClamD-->>Scanner: "stream: OK" or "stream: {VIRUS} FOUND"
+    Scanner-->>App: ScanResult.PASSED or ScanResult.INFECTED
+```
+
+---
+
+## Classes Reference
+
+| Class / Interface | Responsibility |
+| :--- | :--- |
+| [`VirusScanner`](VirusScanner.java) | Contract defining `scan(InputStream)` returning `ScanResult`. |
+| [`ClamdInstreamScanner`](ClamdInstreamScanner.java) | TCP socket client streaming chunks using the ClamAV `zINSTREAM` protocol. |
+| [`VirusScanService`](VirusScanService.java) | Higher-level service orchestrating file scanning and throwing `VirusDetectedException` upon malware discovery. |
+| [`ScanResult`](ScanResult.java) | Record encapsulating verdict (`PASSED`, `INFECTED`, `ERROR`) and signature details. |
